@@ -1,0 +1,67 @@
+import java.util.regex.Pattern;
+
+defaultTasks "publish"
+apply plugin: "ivy-publish"
+
+ext.useIncomingDistributions = false
+
+def allZipPattern = ~/gradle-(\d+(?:\.\d+)+-mtl-\d+(?:-\d{14}(?:[-+]\d{4})?)?)-all\.zip/
+//def allZipPattern = ~/^gradle-(.+)-all\.zip$/
+
+File distDir = file('build/distributions')
+File allZip = fileTree(distDir, {
+	include {
+		String fPath = it.path
+		if(!(fPath ==~ allZipPattern)) return false
+		for(String clas: ['bin', 'src']) {
+			if(!(new File(distDir, fPath.replace('-all.', "-${clas}.")).exists())) {
+				return false
+			}
+		}
+		return true
+	}
+}).files.inject(null as File) {File best, File file ->
+	(best==null || file.lastModified()>best.lastModified()) ? file : best
+}
+
+assert allZip
+def m = allZip.name =~ allZipPattern
+assert m
+String versionNum = m.group(1)
+
+File binZip = new File(distDir, "gradle-${versionNum}-bin.zip")
+File srcZip = new File(distDir, "gradle-${versionNum}-src.zip")
+ 
+publishing {
+	 
+	repositories {
+		ivy {
+			name "soup"
+			url "http://repo.orthoview.com/soup"
+			credentials {
+				username project.ext["mtl.repos.user"]
+				password project.ext["mtl.repos.pwd"]
+			}
+		}
+	}
+	 
+	publications {
+		soupPublication(IvyPublication) {
+			organisation "org.gradle"
+			module       "gradle"
+			revision     versionNum
+			 
+			configurations {
+				create "all"
+				bin
+				sources
+				create "default", { extend "bin" }
+				
+			}
+			
+			artifact source: allZip, conf: 'all',     classifier: 'all'
+			artifact source: binZip, conf: 'bin',     classifier: 'bin'
+			artifact source: srcZip, conf: 'sources', classifier: 'src'
+		}
+	}
+}
