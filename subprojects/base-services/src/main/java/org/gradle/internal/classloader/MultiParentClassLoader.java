@@ -49,21 +49,26 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
     public void addParent(ClassLoader parent) {
         parents.add(parent);
     }
+    
+    protected Collection<? extends ClassLoader> getParentsInternal() {
+        return parents;
+    }
 
     public List<ClassLoader> getParents() {
-        return ImmutableList.copyOf(parents);
+        return ImmutableList.copyOf(getParentsInternal());
     }
+    
 
     public void visit(ClassLoaderVisitor visitor) {
         visitor.visitSpec(new Spec());
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : getParentsInternal()) {
             visitor.visitParent(parent);
         }
     }
 
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : getParentsInternal()) {
             try {
                 return parent.loadClass(name);
             } catch (ClassNotFoundException e) {
@@ -75,7 +80,7 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
 
     @Override
     protected Package getPackage(String name) {
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : getParentsInternal()) {
             Package p = GET_PACKAGE_METHOD.invoke(parent, name);
             if (p != null) {
                 return p;
@@ -87,7 +92,7 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
     @Override
     protected Package[] getPackages() {
         Set<Package> packages = new LinkedHashSet<Package>();
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : getParentsInternal()) {
             Package[] parentPackages = GET_PACKAGES_METHOD.invoke(parent);
             packages.addAll(Arrays.asList(parentPackages));
         }
@@ -96,7 +101,7 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
 
     @Override
     public URL getResource(String name) {
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : getParentsInternal()) {
             URL resource = parent.getResource(name);
             if (resource != null) {
                 return resource;
@@ -108,7 +113,7 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         Set<URL> resources = new LinkedHashSet<URL>();
-        for (ClassLoader parent : parents) {
+        for (ClassLoader parent : getParentsInternal()) {
             Enumeration<URL> parentResources = parent.getResources(name);
             while (parentResources.hasMoreElements()) {
                 resources.add(parentResources.nextElement());
@@ -140,11 +145,11 @@ public class MultiParentClassLoader extends ClassLoader implements ClassLoaderHi
 
         MultiParentClassLoader that = (MultiParentClassLoader) o;
 
-        return parents.equals(that.parents);
+        return getParentsInternal().equals(that.getParentsInternal());
     }
 
     @Override
     public int hashCode() {
-        return parents.hashCode();
+        return getParentsInternal().hashCode();
     }
 }
