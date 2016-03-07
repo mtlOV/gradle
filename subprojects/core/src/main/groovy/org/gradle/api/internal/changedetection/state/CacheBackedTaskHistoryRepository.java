@@ -34,7 +34,7 @@ import java.util.*;
 
 public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheBackedFileSnapshotRepository.class);
-	
+
     private final TaskArtifactStateCacheAccess cacheAccess;
     private final FileSnapshotRepository snapshotRepository;
     private final PersistentIndexedCache<String, TaskHistory> taskHistoryCache;
