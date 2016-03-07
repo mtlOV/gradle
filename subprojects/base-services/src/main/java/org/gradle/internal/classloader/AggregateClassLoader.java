@@ -74,7 +74,7 @@ public class AggregateClassLoader extends MultiParentClassLoader {
 	
 	private static boolean aDelegatesToB(ClassLoader a, ClassLoader b) {
 		for(; a!=null; a=a.getParent()) {
-			if(a==b) return true;
+			if(a.equals(b)) return true;
 		}
 		return false;
 	}
