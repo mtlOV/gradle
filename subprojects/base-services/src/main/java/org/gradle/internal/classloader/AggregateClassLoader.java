@@ -83,7 +83,7 @@ public class AggregateClassLoader extends MultiParentClassLoader {
 
         @Override
         public int compareTo(CLEntry o) {
-            return Integer.compare(depth, o.depth);
+            return new Integer(depth).compareTo(o.depth);
         }
 
     }
