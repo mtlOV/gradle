@@ -15,18 +15,26 @@
  */
 package org.gradle.api.internal.changedetection.state;
 
+import org.gradle.api.Task;
 import org.gradle.api.internal.TaskInternal;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.cache.PersistentIndexedCache;
 import org.gradle.internal.Factory;
+import org.gradle.internal.classloader.AggregateClassLoader;
+import org.gradle.internal.classloader.CachingClassLoader;
+import org.gradle.internal.classloader.MultiParentClassLoader;
 import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
 import org.gradle.internal.serialize.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
 
 public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CacheBackedFileSnapshotRepository.class);
+	
     private final TaskArtifactStateCacheAccess cacheAccess;
     private final FileSnapshotRepository snapshotRepository;
     private final PersistentIndexedCache<String, TaskHistory> taskHistoryCache;
@@ -99,7 +107,7 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
         return cacheAccess.useCache("Load task history", new Factory<TaskHistory>() {
             public TaskHistory create() {
                 ClassLoader original = serializer.getClassLoader();
-                serializer.setClassLoader(task.getClass().getClassLoader());
+                serializer.setClassLoader(getClassLoader(task));
                 try {
                     TaskHistory history = taskHistoryCache.get(task.getPath());
                     return history == null ? new TaskHistory() : history;
@@ -108,6 +116,18 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
                 }
             }
         });
+    }
+    
+    private ClassLoader getClassLoader(Task task) {
+    	MultiParentClassLoader rc = new AggregateClassLoader();
+    	for(Object prop: task.getInputs().getProperties().values()) {
+    		if(prop!=null) {
+    			rc.addParent(prop.getClass().getClassLoader());
+    		}
+    	}
+    	rc.addParent(task.getClass().getClassLoader());
+    	LOGGER.debug("Task {} has {} history class loaders.", task.getName(), rc.getParents().size());
+    	return new CachingClassLoader(rc);
     }
 
     private Set<String> outputFiles(TaskInternal task) {
