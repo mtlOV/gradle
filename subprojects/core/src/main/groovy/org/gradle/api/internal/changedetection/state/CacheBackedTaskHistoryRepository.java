@@ -33,7 +33,7 @@ import java.io.File;
 import java.util.*;
 
 public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
-	private static final Logger LOGGER = LoggerFactory.getLogger(CacheBackedFileSnapshotRepository.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CacheBackedFileSnapshotRepository.class);
 	
     private final TaskArtifactStateCacheAccess cacheAccess;
     private final FileSnapshotRepository snapshotRepository;
@@ -119,15 +119,15 @@ public class CacheBackedTaskHistoryRepository implements TaskHistoryRepository {
     }
     
     private ClassLoader getClassLoader(Task task) {
-    	MultiParentClassLoader rc = new AggregateClassLoader();
-    	for(Object prop: task.getInputs().getProperties().values()) {
-    		if(prop!=null) {
-    			rc.addParent(prop.getClass().getClassLoader());
-    		}
-    	}
-    	rc.addParent(task.getClass().getClassLoader());
-    	LOGGER.debug("Task {} has {} history class loaders.", task.getName(), rc.getParents().size());
-    	return new CachingClassLoader(rc);
+        MultiParentClassLoader rc = new AggregateClassLoader();
+        for (Object prop : task.getInputs().getProperties().values()) {
+            if (prop != null) {
+                rc.addParent(prop.getClass().getClassLoader());
+            }
+        }
+        rc.addParent(task.getClass().getClassLoader());
+        LOGGER.debug("Task {} has {} history class loaders.", task.getName(), rc.getParents().size());
+        return new CachingClassLoader(rc);
     }
 
     private Set<String> outputFiles(TaskInternal task) {
