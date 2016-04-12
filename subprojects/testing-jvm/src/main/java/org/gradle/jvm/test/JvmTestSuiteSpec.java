@@ -18,7 +18,7 @@ package org.gradle.jvm.test;
 import org.gradle.api.Incubating;
 import org.gradle.jvm.JvmComponentSpec;
 import org.gradle.platform.base.DependencySpecContainer;
-import org.gradle.platform.base.test.TestSuiteSpec;
+import org.gradle.testing.base.TestSuiteSpec;
 
 /**
  * Base type for all JVM test suites.
@@ -32,5 +32,6 @@ public interface JvmTestSuiteSpec extends TestSuiteSpec, JvmComponentSpec {
      */
     DependencySpecContainer getDependencies();
 
+    @Override
     JvmComponentSpec getTestedComponent();
 }

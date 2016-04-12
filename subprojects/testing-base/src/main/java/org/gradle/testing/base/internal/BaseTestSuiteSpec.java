@@ -18,7 +18,7 @@ package org.gradle.testing.base.internal;
 
 import org.gradle.platform.base.ComponentSpec;
 import org.gradle.platform.base.component.BaseComponentSpec;
-import org.gradle.platform.base.test.TestSuiteSpec;
+import org.gradle.testing.base.TestSuiteSpec;
 
 public class BaseTestSuiteSpec extends BaseComponentSpec implements TestSuiteSpec {
     private ComponentSpec testedComponent;
@@ -26,6 +26,11 @@ public class BaseTestSuiteSpec extends BaseComponentSpec implements TestSuiteSpe
     @Override
     public ComponentSpec getTestedComponent() {
         return testedComponent;
+    }
+
+    @Override
+    public void setTestedComponent(ComponentSpec testedComponent) {
+        this.testedComponent = testedComponent;
     }
 
     @Override

@@ -36,9 +36,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-import static org.gradle.performance.results.CrossVersionResultsStore.splitVcsCommits;
+import static org.gradle.performance.results.ResultsStoreHelper.splitVcsCommits;
 
-public class BaseCrossBuildResultsStore implements ResultsStore, DataReporter<CrossBuildPerformanceResults>, Closeable {
+public class BaseCrossBuildResultsStore<R extends CrossBuildPerformanceResults> implements ResultsStore, DataReporter<R>, Closeable {
 
     private final File dbFile;
     private final H2FileDb db;
@@ -48,7 +48,7 @@ public class BaseCrossBuildResultsStore implements ResultsStore, DataReporter<Cr
         this.db = new H2FileDb(dbFile, new CrossBuildResultsSchemaInitializer());
     }
 
-    public void report(final CrossBuildPerformanceResults results) {
+    public void report(final R results) {
         try {
             db.withConnection(new ConnectionAction<Void>() {
                 public Void execute(Connection connection) throws Exception {
@@ -108,7 +108,7 @@ public class BaseCrossBuildResultsStore implements ResultsStore, DataReporter<Cr
     }
 
     private String[] toArray(List<String> list) {
-        return list == null ? null : list.toArray(new String[list.size()]);
+        return list == null ? null : list.toArray(new String[0]);
     }
 
     public void close() {

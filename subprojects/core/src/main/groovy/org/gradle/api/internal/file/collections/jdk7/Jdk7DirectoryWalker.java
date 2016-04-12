@@ -36,12 +36,18 @@ import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Jdk7DirectoryWalker implements DirectoryWalker {
+    private final FileSystem fileSystem;
+
+    public Jdk7DirectoryWalker(FileSystem fileSystem) {
+        this.fileSystem = fileSystem;
+    }
+
     static boolean isAllowed(FileTreeElement element, Spec<FileTreeElement> spec) {
         return spec.isSatisfiedBy(element);
     }
 
     @Override
-    public void walkDir(final File rootDir, final RelativePath rootPath, final FileVisitor visitor, final Spec<FileTreeElement> spec, final AtomicBoolean stopFlag, final FileSystem fileSystem, final boolean postfix) {
+    public void walkDir(final File rootDir, final RelativePath rootPath, final FileVisitor visitor, final Spec<FileTreeElement> spec, final AtomicBoolean stopFlag, final boolean postfix) {
         final Deque<FileVisitDetails> directoryDetailsHolder = new LinkedList<FileVisitDetails>();
 
         try {
@@ -66,12 +72,12 @@ public class Jdk7DirectoryWalker implements DirectoryWalker {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (attrs.isSymbolicLink()) {
-                        // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
-                        throw new GradleException(String.format("Could not list contents of '%s'. Couldn't follow symbolic link.", file));
-                    }
                     FileVisitDetails details = getFileVisitDetails(file, attrs, false);
                     if (isAllowed(details, spec)) {
+                        if (attrs.isSymbolicLink()) {
+                            // when FileVisitOption.FOLLOW_LINKS, we only get here when link couldn't be followed
+                            throw new GradleException(String.format("Could not list contents of '%s'. Couldn't follow symbolic link.", file));
+                        }
                         visitor.visitFile(details);
                     }
                     return checkStopFlag();

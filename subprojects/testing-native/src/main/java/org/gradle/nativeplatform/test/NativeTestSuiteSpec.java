@@ -17,12 +17,13 @@ package org.gradle.nativeplatform.test;
 
 import org.gradle.api.Incubating;
 import org.gradle.nativeplatform.NativeComponentSpec;
-import org.gradle.platform.base.test.TestSuiteSpec;
+import org.gradle.testing.base.TestSuiteSpec;
 
 /**
  * A component representing a suite of tests that will be executed together.
  */
 @Incubating
 public interface NativeTestSuiteSpec extends TestSuiteSpec, NativeComponentSpec {
+    @Override
     NativeComponentSpec getTestedComponent();
 }

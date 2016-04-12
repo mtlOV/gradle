@@ -22,6 +22,7 @@ import org.gradle.api.internal.changedetection.state.FileCollectionSnapshot
 import org.gradle.api.internal.changedetection.state.FileCollectionSnapshotter
 import org.gradle.api.internal.changedetection.state.FilesSnapshotSet
 import org.gradle.api.internal.changedetection.state.TaskHistoryRepository
+import org.gradle.api.internal.file.FileCollectionFactory
 import org.gradle.api.tasks.TaskInputs
 import spock.lang.Issue
 import spock.lang.Specification
@@ -31,7 +32,8 @@ class TaskUpToDateStateTest extends Specification {
     private TaskHistoryRepository.History stubHistory
     private FileCollectionSnapshotter stubOutputFileSnapshotter
     private FileCollectionSnapshotter stubInputFileSnapshotter
-    private FileCollectionSnapshotter stubDiscoveredFileSnapshotter
+    private FileCollectionSnapshotter stubDiscoveredInputFileSnapshotter
+    private FileCollectionFactory fileCollectionFactory = Mock(FileCollectionFactory)
 
     def setup() {
         TaskInputs stubInputs = Stub(TaskInputs)
@@ -44,7 +46,7 @@ class TaskUpToDateStateTest extends Specification {
         this.stubHistory = Stub(TaskHistoryRepository.History)
         this.stubOutputFileSnapshotter = Stub(FileCollectionSnapshotter)
         this.stubInputFileSnapshotter = Stub(FileCollectionSnapshotter)
-        this.stubDiscoveredFileSnapshotter = Stub(FileCollectionSnapshotter)
+        this.stubDiscoveredInputFileSnapshotter = Stub(FileCollectionSnapshotter)
     }
 
     def "constructor invokes snapshots" () {
@@ -54,25 +56,26 @@ class TaskUpToDateStateTest extends Specification {
         }
         FileCollectionSnapshotter mockOutputFileSnapshotter = Mock(FileCollectionSnapshotter)
         FileCollectionSnapshotter mockInputFileSnapshotter = Mock(FileCollectionSnapshotter)
-        FileCollectionSnapshotter mockDiscoveredFileSnapshotter = Mock(FileCollectionSnapshotter)
+        FileCollectionSnapshotter mockDiscoveredInputFileSnapshotter = Mock(FileCollectionSnapshotter)
+
 
         when:
-        new TaskUpToDateState(stubTask, stubHistory, mockOutputFileSnapshotter, mockInputFileSnapshotter, mockDiscoveredFileSnapshotter)
+        new TaskUpToDateState(stubTask, stubHistory, mockOutputFileSnapshotter, mockInputFileSnapshotter, mockDiscoveredInputFileSnapshotter, fileCollectionFactory)
 
         then:
         noExceptionThrown()
-        1 * mockOutputFileSnapshotter.snapshot(_)
-        1 * mockInputFileSnapshotter.snapshot(_) >> stubSnapshot
+        1 * mockOutputFileSnapshotter.snapshot(_, _)
+        1 * mockInputFileSnapshotter.snapshot(_, _) >> stubSnapshot
     }
 
     @Issue("https://issues.gradle.org/browse/GRADLE-2967")
     def "constructor adds context when input snapshot throws UncheckedIOException" () {
         setup:
         def cause = new UncheckedIOException("thrown from stub")
-        _ * stubInputFileSnapshotter.snapshot(_) >> { throw cause }
+        _ * stubInputFileSnapshotter.snapshot(_, _) >> { throw cause }
 
         when:
-        new TaskUpToDateState(stubTask, stubHistory, stubOutputFileSnapshotter, stubInputFileSnapshotter, stubDiscoveredFileSnapshotter)
+        new TaskUpToDateState(stubTask, stubHistory, stubOutputFileSnapshotter, stubInputFileSnapshotter, stubDiscoveredInputFileSnapshotter, fileCollectionFactory)
 
         then:
         def e = thrown(UncheckedIOException)
@@ -86,10 +89,10 @@ class TaskUpToDateStateTest extends Specification {
     def "constructor adds context when output snapshot throws UncheckedIOException" () {
         setup:
         def cause = new UncheckedIOException("thrown from stub")
-         _ * stubOutputFileSnapshotter.snapshot(_) >> { throw cause }
+        _ * stubOutputFileSnapshotter.snapshot(_, _) >> { throw cause }
 
         when:
-        new TaskUpToDateState(stubTask, stubHistory, stubOutputFileSnapshotter, stubInputFileSnapshotter, stubDiscoveredFileSnapshotter)
+        new TaskUpToDateState(stubTask, stubHistory, stubOutputFileSnapshotter, stubInputFileSnapshotter, stubDiscoveredInputFileSnapshotter, fileCollectionFactory)
 
         then:
         def e = thrown(UncheckedIOException)

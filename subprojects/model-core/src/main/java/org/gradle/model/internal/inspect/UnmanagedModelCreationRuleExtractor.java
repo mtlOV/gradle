@@ -24,11 +24,10 @@ import org.gradle.model.internal.type.ModelType;
 import java.util.List;
 
 public class UnmanagedModelCreationRuleExtractor extends AbstractModelCreationRuleExtractor {
-    private static final ModelType<Void> VOID = ModelType.of(Void.TYPE);
 
     @Override
     public boolean isSatisfiedBy(MethodRuleDefinition<?, ?> element) {
-        return super.isSatisfiedBy(element) && !element.getReturnType().equals(VOID);
+        return super.isSatisfiedBy(element) && !isVoidMethod(element);
     }
 
     @Override
@@ -36,6 +35,7 @@ public class UnmanagedModelCreationRuleExtractor extends AbstractModelCreationRu
         return new ExtractedUnmanagedCreationRule<R, S>(modelPath, ruleDefinition);
     }
 
+    @Override
     public String getDescription() {
         return String.format("%s and returning a model element", super.getDescription());
     }
@@ -91,12 +91,13 @@ public class UnmanagedModelCreationRuleExtractor extends AbstractModelCreationRu
 
         @Override
         protected void buildRegistration(MethodModelRuleApplicationContext context, ModelRegistrations.Builder registration) {
+            MethodRuleDefinition<R, S> ruleDefinition = getRuleDefinition();
             ModelType<R> modelType = ruleDefinition.getReturnType();
             List<ModelReference<?>> inputs = ruleDefinition.getReferences();
             ModelRuleDescriptor descriptor = ruleDefinition.getDescriptor();
             ModelReference<Object> subjectReference = ModelReference.of(modelPath);
             registration.action(ModelActionRole.Create,
-                    context.contextualize(ruleDefinition, new UnmanagedElementCreationAction<R>(descriptor, subjectReference, inputs, modelType)));
+                    context.contextualize(new UnmanagedElementCreationAction<R>(descriptor, subjectReference, inputs, modelType)));
             registration.withProjection(new UnmanagedModelProjection<R>(modelType));
         }
     }

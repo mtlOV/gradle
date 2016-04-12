@@ -20,7 +20,7 @@ import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Incubating;
 import org.gradle.api.Task;
-import org.gradle.api.internal.file.FileResolver;
+import org.gradle.api.internal.file.SourceDirectorySetFactory;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.language.base.LanguageSourceSet;
@@ -33,13 +33,15 @@ import org.gradle.language.twirl.TwirlSourceSet;
 import org.gradle.language.twirl.internal.DefaultTwirlSourceSet;
 import org.gradle.model.ModelMap;
 import org.gradle.model.Mutate;
+import org.gradle.model.Path;
 import org.gradle.model.RuleSource;
 import org.gradle.platform.base.BinarySpec;
-import org.gradle.platform.base.LanguageType;
-import org.gradle.platform.base.LanguageTypeBuilder;
+import org.gradle.platform.base.ComponentType;
+import org.gradle.platform.base.TypeBuilder;
 import org.gradle.platform.base.internal.PlatformResolvers;
 import org.gradle.play.PlayApplicationSpec;
-import org.gradle.play.internal.*;
+import org.gradle.play.internal.PlayApplicationBinarySpecInternal;
+import org.gradle.play.internal.ScalaSourceCode;
 import org.gradle.play.internal.platform.PlayPlatformInternal;
 import org.gradle.play.platform.PlayPlatform;
 import org.gradle.play.tasks.TwirlCompile;
@@ -56,27 +58,26 @@ import java.util.Map;
 @Incubating
 public class PlayTwirlPlugin extends RuleSource {
 
-    @LanguageType
-    void registerTwirlLanguageType(LanguageTypeBuilder<TwirlSourceSet> builder) {
-        builder.setLanguageName("twirl");
+    @ComponentType
+    void registerTwirlLanguageType(TypeBuilder<TwirlSourceSet> builder) {
         builder.defaultImplementation(DefaultTwirlSourceSet.class);
     }
 
     @Mutate
-    void createGeneratedScalaSourceSets(ModelMap<PlayApplicationBinarySpecInternal> binaries, final ServiceRegistry serviceRegistry) {
-        final FileResolver fileResolver = serviceRegistry.get(FileResolver.class);
+    void createGeneratedScalaSourceSets(@Path("binaries") ModelMap<PlayApplicationBinarySpecInternal> binaries, final SourceDirectorySetFactory sourceDirectorySetFactory) {
         binaries.all(new Action<PlayApplicationBinarySpecInternal>() {
             @Override
             public void execute(PlayApplicationBinarySpecInternal playApplicationBinarySpec) {
                 for (LanguageSourceSet languageSourceSet : playApplicationBinarySpec.getInputs().withType(TwirlSourceSet.class)) {
-                    playApplicationBinarySpec.addGeneratedScala(languageSourceSet, fileResolver);
+                    playApplicationBinarySpec.addGeneratedScala(languageSourceSet, sourceDirectorySetFactory);
                 }
             }
         });
     }
 
     @Mutate
-    void addPlayJavaDependencyIfNeeded(ModelMap<PlayApplicationBinarySpecInternal> binaries, final PlayPluginConfigurations configurations, final PlatformResolvers platforms) {
+    // TODO:LPTR This should be @Defaults @Each PlayApplicationBinarySpecInternal
+    void addPlayJavaDependencyIfNeeded(@Path("binaries") ModelMap<PlayApplicationBinarySpecInternal> binaries, final PlayPluginConfigurations configurations, final PlatformResolvers platforms) {
         binaries.beforeEach(new Action<PlayApplicationBinarySpecInternal>() {
             @Override
             public void execute(PlayApplicationBinarySpecInternal binary) {
@@ -103,18 +104,27 @@ public class PlayTwirlPlugin extends RuleSource {
     }
 
     private static class Twirl implements LanguageTransform<TwirlSourceSet, ScalaSourceCode> {
+        @Override
+        public String getLanguageName() {
+            return "twirl";
+        }
+
+        @Override
         public Class<TwirlSourceSet> getSourceSetType() {
             return TwirlSourceSet.class;
         }
 
+        @Override
         public Class<ScalaSourceCode> getOutputType() {
             return ScalaSourceCode.class;
         }
 
+        @Override
         public Map<String, Class<?>> getBinaryTools() {
             return Collections.emptyMap();
         }
 
+        @Override
         public SourceTransformTaskConfig getTransformTask() {
             return new SourceTransformTaskConfig() {
                 public String getTaskPrefix() {
@@ -146,6 +156,7 @@ public class PlayTwirlPlugin extends RuleSource {
             };
         }
 
+        @Override
         public boolean applyToBinary(BinarySpec binary) {
             return binary instanceof PlayApplicationBinarySpecInternal;
         }

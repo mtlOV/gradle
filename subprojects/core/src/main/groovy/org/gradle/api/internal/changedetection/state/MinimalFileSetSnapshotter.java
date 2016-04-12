@@ -17,34 +17,33 @@
 package org.gradle.api.internal.changedetection.state;
 
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileVisitDetails;
+import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.internal.file.FileResolver;
-import org.gradle.api.internal.file.collections.ListBackedFileSet;
-import org.gradle.api.internal.file.collections.MinimalFileSet;
+import org.gradle.internal.nativeplatform.filesystem.FileSystem;
 
 import java.io.File;
 import java.util.List;
 
 /**
- * A minimal file set snapshotter is different from the default file collection snapshotter in that it doesn't depend
- * on the files in the file collection to exist.  Missing files are turned into MissingFileSnapshots.
+ * A minimal file set snapshotter is different from the default file collection snapshotter in that it creates a snapshot for every file
+ * in the input FileCollection without visiting the files on disk.  This allows files that do not exist yet to be considered part of the
+ * FileCollectionSnapshot without that information being lost.
  */
-public class MinimalFileSetSnapshotter extends DefaultFileCollectionSnapshotter {
-    public MinimalFileSetSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, FileResolver fileResolver) {
+public class MinimalFileSetSnapshotter extends AbstractFileCollectionSnapshotter {
+    private final FileSystem fileSystem;
+
+    public MinimalFileSetSnapshotter(FileSnapshotter snapshotter, TaskArtifactStateCacheAccess cacheAccess, StringInterner stringInterner, FileResolver fileResolver, FileSystem fileSystem) {
         super(snapshotter, cacheAccess, stringInterner, fileResolver);
+        this.fileSystem = fileSystem;
     }
 
     @Override
-    protected void visitFiles(FileCollection input, final List<FileVisitDetails> allFileVisitDetails, final List<File> missingFiles) {
-        visitFiles(new ListBackedFileSet(input.getFiles()), allFileVisitDetails, missingFiles);
-    }
-
-    private void visitFiles(MinimalFileSet input, final List<FileVisitDetails> allFileVisitDetails, final List<File> missingFiles) {
+    protected void visitFiles(FileCollection input, final List<FileTreeElement> fileTreeElements, final List<File> missingFiles, boolean allowReuse) {
         for (File file : input.getFiles()) {
             if (file.exists()) {
-                allFileVisitDetails.add(new DefaultFileVisitDetails(file));
+                fileTreeElements.add(new DefaultFileVisitDetails(file, fileSystem, fileSystem));
             } else {
                 missingFiles.add(file);
             }

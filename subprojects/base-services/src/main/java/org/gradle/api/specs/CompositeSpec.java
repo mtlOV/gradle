@@ -25,7 +25,7 @@ import java.util.List;
  *
  * @param <T> The target type for this Spec
  */
-abstract public class CompositeSpec<T> implements Spec<T> {
+public abstract class CompositeSpec<T> implements Spec<T> {
     private final Spec<? super T>[] specs;
 
     protected CompositeSpec(Spec<? super T>... specs) {
@@ -37,7 +37,7 @@ abstract public class CompositeSpec<T> implements Spec<T> {
         for (Spec<? super T> spec : specs) {
             copy.add(spec);
         }
-        this.specs = copy.toArray(new Spec[copy.size()]);
+        this.specs = copy.toArray(new Spec[0]);
     }
 
     // Not public. Evaluation of these specs is a major hot spot for large builds, so use an array for iteration

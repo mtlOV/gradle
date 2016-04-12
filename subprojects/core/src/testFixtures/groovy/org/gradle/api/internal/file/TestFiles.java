@@ -15,10 +15,15 @@
  */
 package org.gradle.api.internal.file;
 
+import org.gradle.api.internal.file.collections.DefaultDirectoryFileTreeFactory;
+import org.gradle.api.internal.file.collections.DirectoryFileTreeFactory;
 import org.gradle.api.tasks.util.PatternSet;
 import org.gradle.api.tasks.util.internal.PatternSets;
 import org.gradle.internal.Factory;
 import org.gradle.internal.nativeintegration.filesystem.FileSystem;
+import org.gradle.process.internal.DefaultExecActionFactory;
+import org.gradle.process.internal.ExecActionFactory;
+import org.gradle.process.internal.ExecHandleFactory;
 import org.gradle.testfixtures.internal.NativeServicesTestFixture;
 
 import java.io.File;
@@ -49,8 +54,32 @@ public class TestFiles {
         return FILE_LOOKUP.getFileResolver(baseDir);
     }
 
-    public static FileResolver currentDirResolver() {
-        return resolver(new File(".").getAbsoluteFile());
+    public static DirectoryFileTreeFactory directoryFileTreeFactory() {
+        return new DefaultDirectoryFileTreeFactory();
+    }
+
+    public static FileCollectionFactory fileCollectionFactory() {
+        return new DefaultFileCollectionFactory();
+    }
+
+    public static SourceDirectorySetFactory sourceDirectorySetFactory() {
+        return new DefaultSourceDirectorySetFactory(resolver(), new DefaultDirectoryFileTreeFactory());
+    }
+
+    public static SourceDirectorySetFactory sourceDirectorySetFactory(File baseDir) {
+        return new DefaultSourceDirectorySetFactory(resolver(baseDir), new DefaultDirectoryFileTreeFactory());
+    }
+
+    public static ExecActionFactory execActionFactory() {
+        return new DefaultExecActionFactory(resolver());
+    }
+
+    public static ExecHandleFactory execHandleFactory() {
+        return new DefaultExecActionFactory(resolver());
+    }
+
+    public static ExecHandleFactory execHandleFactory(File baseDir) {
+        return new DefaultExecActionFactory(resolver(baseDir));
     }
 
     public static Factory<PatternSet> getPatternSetFactory() {

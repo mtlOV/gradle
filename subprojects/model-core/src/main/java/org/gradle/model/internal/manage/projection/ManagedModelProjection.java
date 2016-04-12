@@ -32,6 +32,7 @@ import org.gradle.model.internal.manage.instance.ManagedInstance;
 import org.gradle.model.internal.manage.instance.ManagedProxyFactory;
 import org.gradle.model.internal.manage.instance.ModelElementState;
 import org.gradle.model.internal.manage.schema.*;
+import org.gradle.model.internal.manage.schema.extract.ScalarCollectionModelView;
 import org.gradle.model.internal.type.ModelType;
 
 import java.util.Collection;
@@ -113,6 +114,7 @@ public class ManagedModelProjection<M> extends TypeCompatibilityModelProjectionS
                     return modelNode.hashCode();
                 }
 
+                @Override
                 public Object get(String name) {
                     if (propertyViews.containsKey(name)) {
                         return propertyViews.get(name);
@@ -133,13 +135,6 @@ public class ManagedModelProjection<M> extends TypeCompatibilityModelProjectionS
                     propertyNode.ensureUsable();
 
                     ModelView<? extends T> modelView;
-                    ModelSchema<T> propertySchema = property.getSchema();
-                    if (property.isWritable() && propertySchema instanceof ScalarCollectionSchema) {
-                        Collection<?> instance = ScalarCollectionSchema.get(propertyNode);
-                        if (instance == null) {
-                            return null;
-                        }
-                    }
                     if (writable) {
                         modelView = propertyNode.asMutable(propertyType, ruleDescriptor);
                         if (closed) {
@@ -156,6 +151,7 @@ public class ManagedModelProjection<M> extends TypeCompatibilityModelProjectionS
                     ClosureBackedAction.execute(get(name), action);
                 }
 
+                @Override
                 public void set(String name, Object value) {
                     if (!writable || closed) {
                         throw new ModelViewClosedException(getType(), ruleDescriptor);
@@ -175,23 +171,15 @@ public class ManagedModelProjection<M> extends TypeCompatibilityModelProjectionS
                     propertyNode.ensureUsable();
 
                     if (propertySchema instanceof ManagedImplSchema) {
-                        if (value == null) {
-                            if (propertySchema instanceof ScalarCollectionSchema) {
-                                ScalarCollectionSchema.clear(propertyNode);
-                            } else {
-                                propertyNode.setTarget(null);
-                            }
-                        } else if (ManagedInstance.class.isInstance(value)) {
+                        if (propertySchema instanceof ScalarCollectionSchema) {
+                            ModelView<? extends Collection<?>> modelView = propertyNode.asMutable(COLLECTION_MODEL_TYPE, ruleDescriptor);
+                            return ((ScalarCollectionModelView<?, ? extends Collection<?>>) modelView).setValue(value);
+                        } else if (value == null) {
+                            propertyNode.setTarget(null);
+                        } else if (value instanceof ManagedInstance) {
                             ManagedInstance managedInstance = (ManagedInstance) value;
                             MutableModelNode targetNode = managedInstance.getBackingNode();
                             propertyNode.setTarget(targetNode);
-                        } else if (propertySchema instanceof ScalarCollectionSchema && value instanceof Collection) {
-                            ModelView<? extends Collection<?>> modelView = propertyNode.asMutable(COLLECTION_MODEL_TYPE, ruleDescriptor);
-                            Collection<Object> instance = Cast.uncheckedCast(modelView.getInstance());
-                            Collection<Object> values = Cast.uncheckedCast(value);
-                            instance.clear();
-                            instance.addAll(values);
-                            return instance;
                         } else {
                             throw new IllegalArgumentException(String.format("Only managed model instances can be set as property '%s' of class '%s'", name, getType()));
                         }

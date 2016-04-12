@@ -38,9 +38,9 @@ class RealWorldNativePluginPerformanceTest extends AbstractCrossVersionPerforman
         runner.testProject = testProject
         runner.tasksToRun = ['build']
         runner.maxExecutionTimeRegression = maxExecutionTimeRegression
-        runner.targetVersions = [ '2.10', '2.11', 'last' ]
+        runner.targetVersions = ['2.11', 'last']
         runner.useDaemon = true
-        runner.gradleOpts = ["-Xms4g", "-Xmx4g", "-XX:MaxPermSize=256m", "-XX:+HeapDumpOnOutOfMemoryError"]
+        runner.gradleOpts = ["-Xms4g", "-Xmx4g", "-XX:MaxPermSize=256m"]
 
         if (parallelWorkers) {
             runner.args += ["--parallel", "--max-workers=$parallelWorkers".toString()]
@@ -69,9 +69,9 @@ class RealWorldNativePluginPerformanceTest extends AbstractCrossVersionPerforman
         runner.tasksToRun = ['build']
         runner.args = ["--parallel", "--max-workers=4"]
         runner.maxExecutionTimeRegression = maxExecutionTimeRegression
-        runner.targetVersions = ['2.10', 'last']
+        runner.targetVersions = ['2.11', 'last']
         runner.useDaemon = true
-        runner.gradleOpts = ["-Xms4g", "-Xmx4g", "-XX:MaxPermSize=256m", "-XX:+HeapDumpOnOutOfMemoryError"]
+        runner.gradleOpts = ["-Xms4g", "-Xmx4g", "-XX:MaxPermSize=256m"]
         runner.runs = 10
 
         runner.buildExperimentListener = new BuildExperimentListenerAdapter() {

@@ -43,16 +43,17 @@ public abstract class AbstractAnnotationModelRuleExtractorTest extends ProjectRe
     @Unroll
     def "handles methods annotated with @#annotationName"() {
         when:
-        1 * ruleDefinition.getAnnotation(annotation) >> null
+        1 * ruleDefinition.isAnnotationPresent(annotation) >> false
 
         then:
         !ruleHandler.isSatisfiedBy(ruleDefinition)
 
         when:
-        1 * ruleDefinition.getAnnotation(annotation) >> Mock(annotation)
+        1 * ruleDefinition.isAnnotationPresent(annotation) >> true
 
         then:
         ruleHandler.isSatisfiedBy(ruleDefinition)
+
         where:
         annotationName << [annotation.getSimpleName()]
     }
@@ -60,21 +61,17 @@ public abstract class AbstractAnnotationModelRuleExtractorTest extends ProjectRe
     void apply(ExtractedModelRule rule, ModelRegistry registry) {
         def context = Stub(MethodModelRuleApplicationContext) {
             getRegistry() >> registry
-            contextualize(_, _) >> { MethodRuleDefinition definition, MethodRuleAction action ->
+            contextualize(_) >> { MethodRuleAction action ->
                 Stub(ModelAction) {
                     getSubject() >> action.subject
                     getInputs() >> action.inputs
                     execute(_, _) >> { MutableModelNode node, List<ModelView<?>> inputs ->
-                        action.execute(new DefaultModelRuleInvoker(definition.method, { definition.method.method.declaringClass.newInstance() } as Factory), node, inputs) }
+                        action.execute(new DefaultModelRuleInvoker(rule.ruleDefinition.method, { rule.ruleDefinition.method.method.declaringClass.newInstance() } as Factory), node, inputs) }
                 }
             }
+            getScope() >> ModelPath.ROOT
         }
         def node = Stub(MutableModelNode)
-        rule.apply(context, node)
-    }
-
-    void apply(ExtractedModelRule rule, MutableModelNode node) {
-        def context = Stub(MethodModelRuleApplicationContext)
         rule.apply(context, node)
     }
 

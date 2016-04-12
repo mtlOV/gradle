@@ -18,11 +18,12 @@ package org.gradle.play.integtest.continuous
 
 import org.gradle.play.integtest.fixtures.AbstractMultiVersionPlayContinuousBuildIntegrationTest
 import org.gradle.play.integtest.fixtures.MultiProjectRunningPlayApp
-import org.gradle.play.integtest.fixtures.PlayApp
 import org.gradle.play.integtest.fixtures.RunningPlayApp
 import org.gradle.play.integtest.fixtures.app.BasicPlayApp
+import org.gradle.play.integtest.fixtures.PlayApp
 import org.gradle.play.integtest.fixtures.app.PlayMultiProject
 import org.gradle.test.fixtures.file.TestFile
+
 
 class PlayMultiProjectContinuousBuildIntegrationTest extends AbstractMultiVersionPlayContinuousBuildIntegrationTest {
     PlayApp playApp = new PlayMultiProject()
@@ -48,22 +49,7 @@ class PlayMultiProjectContinuousBuildIntegrationTest extends AbstractMultiVersio
     }
 
     def "can run play apps in multiple projects in multiproject continuous build" () {
-        childApp.writeSources(childDirectory)
-        childDirectory.file('build.gradle') << """
-            model {
-                tasks.runPlayBinary {
-                    httpPort = 0
-                }
-            }
-
-            // ensure that child run task always runs second
-            tasks.withType(PlayRun) {
-                dependsOn project(':primary').tasks.withType(PlayRun)
-            }
-        """
-        file('settings.gradle') << """
-            include ':child'
-        """
+        includeChildApp()
 
         when:
         succeeds(":primary:runPlayBinary", ":child:runPlayBinary")
@@ -98,31 +84,8 @@ class PlayMultiProjectContinuousBuildIntegrationTest extends AbstractMultiVersio
         childAppIsStopped()
     }
 
-    def childAppIsRunningAndDeployed() {
-        runningChildApp.initialize(gradle)
-        runningChildApp.verifyStarted('', 1)
-        runningChildApp.verifyContent()
-        true
-    }
-
-    def childAppIsStopped() {
-        runningChildApp.requireHttpPort(1)
-        runningChildApp.verifyStopped()
-        true
-    }
-
     def "show build failures in play apps in multiple projects in multiproject continuous build" () {
-        childApp.writeSources(childDirectory)
-        childDirectory.file('build.gradle') << """
-            model {
-                tasks.runPlayBinary {
-                    httpPort = 0
-                }
-            }
-        """
-        file('settings.gradle') << """
-            include ':child'
-        """
+        includeChildApp()
 
         when:
         succeeds(":primary:runPlayBinary", ":child:runPlayBinary")
@@ -148,10 +111,27 @@ class PlayMultiProjectContinuousBuildIntegrationTest extends AbstractMultiVersio
         childAppIsRunningAndDeployed()
     }
 
+    private void includeChildApp() {
+        childApp.writeSources(childDirectory)
+        childDirectory.file('build.gradle') << """
+            model {
+                tasks.runPlayBinary {
+                    httpPort = 0
+                }
+            }
+
+            // ensure that child run task always runs second, even with --parallel
+            tasks.withType(PlayRun) {
+                dependsOn project(':primary').tasks.withType(PlayRun)
+            }
+        """
+        file('settings.gradle') << """
+            include ':child'
+        """
+    }
+
     def addBadScala(path) {
-        def file = file("$path/models/NewType.scala")
-        waitBeforeModification file
-        file << """
+        file("$path/models/NewType.scala") << """
 package models
 
 object NewType {
@@ -159,11 +139,22 @@ object NewType {
     }
 
     def fixBadScala(path) {
-        def file = file("$path/models/NewType.scala")
-        waitBeforeModification file
-        file << """
+        file("$path/models/NewType.scala") << """
 }
 """
+    }
+
+    def childAppIsRunningAndDeployed() {
+        runningChildApp.initialize(gradle)
+        runningChildApp.verifyStarted('', 1)
+        runningChildApp.verifyContent()
+        true
+    }
+
+    def childAppIsStopped() {
+        runningChildApp.requireHttpPort(1)
+        runningChildApp.verifyStopped()
+        true
     }
 
     private errorPageHasTaskFailure(task) {

@@ -42,13 +42,14 @@ public class ManagedModelCreationRuleExtractor extends AbstractModelCreationRule
         this.schemaStore = schemaStore;
     }
 
+    @Override
     public String getDescription() {
         return String.format("%s and taking a managed model element", super.getDescription());
     }
 
     @Override
     public boolean isSatisfiedBy(MethodRuleDefinition<?, ?> element) {
-        return super.isSatisfiedBy(element) && element.getReturnType().equals(ModelType.of(Void.TYPE));
+        return super.isSatisfiedBy(element) && isVoidMethod(element);
     }
 
     @Override
@@ -91,6 +92,7 @@ public class ManagedModelCreationRuleExtractor extends AbstractModelCreationRule
 
         @Override
         protected void buildRegistration(MethodModelRuleApplicationContext context, ModelRegistrations.Builder registration) {
+            MethodRuleDefinition<R, S> ruleDefinition = getRuleDefinition();
             List<ModelReference<?>> bindings = ruleDefinition.getReferences();
             List<ModelReference<?>> inputs = bindings.subList(1, bindings.size());
             final ModelRuleDescriptor descriptor = ruleDefinition.getDescriptor();
@@ -113,7 +115,7 @@ public class ManagedModelCreationRuleExtractor extends AbstractModelCreationRule
             }
 
             registration.action(ModelActionRole.Initialize,
-                    context.contextualize(ruleDefinition, new MethodBackedModelAction<S>(descriptor, ModelReference.of(modelPath, modelSchema.getType()), inputs)));
+                    context.contextualize(new MethodBackedModelAction<S>(descriptor, ModelReference.of(modelPath, modelSchema.getType()), inputs)));
         }
 
     }

@@ -26,14 +26,12 @@ import org.gradle.api.file.RelativePath;
 import org.gradle.api.internal.file.AbstractFileTreeElement;
 import org.gradle.api.internal.file.DefaultFileVisitDetails;
 import org.gradle.api.internal.file.FileSystemSubset;
-import org.gradle.api.internal.file.collections.DirectoryFileTree;
-import org.gradle.api.internal.file.collections.FileSystemMirroringFileTree;
-import org.gradle.api.internal.file.collections.MinimalFileTree;
-import org.gradle.api.internal.file.collections.SingletonFileTree;
+import org.gradle.api.internal.file.collections.*;
 import org.gradle.api.resources.ResourceException;
 import org.gradle.api.resources.internal.ReadableResourceInternal;
 import org.gradle.internal.hash.HashUtil;
 import org.gradle.internal.nativeintegration.filesystem.Chmod;
+import org.gradle.internal.nativeintegration.filesystem.Stat;
 import org.gradle.util.GFileUtils;
 
 import java.io.File;
@@ -45,12 +43,16 @@ public class TarFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     private final File tarFile;
     private final ReadableResourceInternal resource;
     private final Chmod chmod;
+    private final Stat stat;
+    private final DirectoryFileTreeFactory directoryFileTreeFactory;
     private final File tmpDir;
 
-    public TarFileTree(@Nullable File tarFile, ReadableResourceInternal resource, File tmpDir, Chmod chmod) {
+    public TarFileTree(@Nullable File tarFile, ReadableResourceInternal resource, File tmpDir, Chmod chmod, Stat stat, DirectoryFileTreeFactory directoryFileTreeFactory) {
         this.tarFile = tarFile;
         this.resource = resource;
         this.chmod = chmod;
+        this.stat = stat;
+        this.directoryFileTreeFactory = directoryFileTreeFactory;
         String expandDirName = String.format("%s_%s", resource.getBaseName(), HashUtil.createCompactMD5(resource.getURI().toString()));
         this.tmpDir = new File(tmpDir, expandDirName);
     }
@@ -60,7 +62,7 @@ public class TarFileTree implements MinimalFileTree, FileSystemMirroringFileTree
     }
 
     public DirectoryFileTree getMirror() {
-        return new DirectoryFileTree(tmpDir);
+        return directoryFileTreeFactory.create(tmpDir);
     }
 
     public void visit(FileVisitor visitor) {
@@ -205,12 +207,12 @@ public class TarFileTree implements MinimalFileTree, FileSystemMirroringFileTree
             visit(new FileVisitor() {
                 @Override
                 public void visitDir(FileVisitDetails dirDetails) {
-                    visitor.visitDir(new DefaultFileVisitDetails(dirDetails.getFile()));
+                    visitor.visitDir(new DefaultFileVisitDetails(dirDetails.getFile(), chmod, stat));
                 }
 
                 @Override
                 public void visitFile(FileVisitDetails fileDetails) {
-                    visitor.visitFile(new DefaultFileVisitDetails(fileDetails.getFile()));
+                    visitor.visitFile(new DefaultFileVisitDetails(fileDetails.getFile(), chmod, stat));
                 }
             });
         }

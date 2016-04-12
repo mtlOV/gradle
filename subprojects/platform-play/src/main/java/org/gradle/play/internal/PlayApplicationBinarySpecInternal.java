@@ -17,7 +17,7 @@
 package org.gradle.play.internal;
 
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.internal.file.FileResolver;
+import org.gradle.api.internal.file.SourceDirectorySetFactory;
 import org.gradle.jvm.internal.WithJvmAssembly;
 import org.gradle.language.base.LanguageSourceSet;
 import org.gradle.language.scala.internal.ScalaJvmAssembly;
@@ -33,6 +33,7 @@ public interface PlayApplicationBinarySpecInternal extends PlayApplicationBinary
 
     void setToolChain(PlayToolChainInternal toolChain);
 
+    @Override
     PlayToolChainInternal getToolChain();
 
     void setJarFile(File file);
@@ -43,8 +44,9 @@ public interface PlayApplicationBinarySpecInternal extends PlayApplicationBinary
 
     void setClasspath(FileCollection applicationClasspath);
 
+    @Override
     ScalaJvmAssembly getAssembly();
 
-    void addGeneratedScala(LanguageSourceSet input, FileResolver fileResolver);
-    void addGeneratedJavaScript(LanguageSourceSet input, FileResolver fileResolver);
+    void addGeneratedScala(LanguageSourceSet input, SourceDirectorySetFactory sourceDirectorySetFactory);
+    void addGeneratedJavaScript(LanguageSourceSet input, SourceDirectorySetFactory sourceDirectorySetFactory);
 }

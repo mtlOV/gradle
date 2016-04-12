@@ -68,7 +68,6 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
         this.directoryWalkerFactory = directoryWalkerFactory;
     }
 
-
     public String getDisplayName() {
         String includes = patternSet.getIncludes().isEmpty() ? "" : String.format(" include %s", GUtil.toString(patternSet.getIncludes()));
         String excludes = patternSet.getExcludes().isEmpty() ? "" : String.format(" exclude %s", GUtil.toString(patternSet.getExcludes()));
@@ -144,7 +143,7 @@ public class DirectoryFileTree implements MinimalFileTree, PatternFilterableFile
     }
 
     private void walkDir(File file, RelativePath path, FileVisitor visitor, Spec<FileTreeElement> spec, AtomicBoolean stopFlag) {
-        directoryWalkerFactory.create().walkDir(file, path, visitor, spec, stopFlag, fileSystem, postfix);
+        directoryWalkerFactory.create().walkDir(file, path, visitor, spec, stopFlag, postfix);
     }
 
     static boolean isAllowed(FileTreeElement element, Spec<FileTreeElement> spec) {

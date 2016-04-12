@@ -71,7 +71,6 @@ public class BinaryTasksModelRuleExtractor extends AbstractAnnotationDrivenCompo
             super(ModelReference.of(binaryType), binaryType, ruleDefinition, ModelReference.of(TASK_FACTORY));
         }
 
-        // TODO:DAZ Clean this up, and remove DomainObjectCollectionBackedModelMap
         @Override
         protected void execute(ModelRuleInvoker<?> invoker, final T binary, List<ModelView<?>> inputs) {
             NamedEntityInstantiator<Task> taskFactory = Cast.uncheckedCast(ModelViews.getInstance(inputs.get(0), TASK_FACTORY));
@@ -96,19 +95,19 @@ public class BinaryTasksModelRuleExtractor extends AbstractAnnotationDrivenCompo
         }
     }
 
-    private static class ExtractedBinaryTasksRule<T extends BinarySpec> implements ExtractedModelRule {
-        private final MethodRuleDefinition<?, ?> ruleDefinition;
+    private static class ExtractedBinaryTasksRule<T extends BinarySpec>  extends AbstractExtractedModelRule {
         private final ModelType<T> binaryType;
 
         public ExtractedBinaryTasksRule(MethodRuleDefinition<?, ?> ruleDefinition, ModelType<T> binaryType) {
-            this.ruleDefinition = ruleDefinition;
+            super(ruleDefinition);
             this.binaryType = binaryType;
         }
 
         @Override
         public void apply(MethodModelRuleApplicationContext context, MutableModelNode target) {
+            MethodRuleDefinition<?, ?> ruleDefinition = getRuleDefinition();
             final BinaryTaskRule<T> binaryTaskRule = new BinaryTaskRule<T>(binaryType, ruleDefinition);
-            final ModelAction binaryTaskAction = context.contextualize(ruleDefinition, binaryTaskRule);
+            final ModelAction binaryTaskAction = context.contextualize(binaryTaskRule);
             context.getRegistry().configure(ModelActionRole.Defaults, DirectNodeNoInputsModelAction.of(
                     BINARIES_CONTAINER,
                     ruleDefinition.getDescriptor(),
